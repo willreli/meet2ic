@@ -1,93 +1,139 @@
-# Meet2IC
+# 📅 Meet2IC — Sistema de Consulta de Disponibilidade
 
+**Meet2IC** é uma aplicação web desenvolvida em PHP com MySQL, que permite criar enquetes de disponibilidade semelhantes ao Doodle, com autenticação via Google e interface moderna usando FullCalendar e Bootstrap.
 
+A solução para criar e responder enquetes de disponibilidade com facilidade usando sua conta Google, ou a diretamente incluindo seu nome.
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## 📁 Estrutura do Projeto
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.ic.unicamp.br/william/meet2ic.git
-git branch -M main
-git push -uf origin main
+/
+├── config.php              # Configuração de sessão, Google OAuth e conexão PDO
+├── index.php               # Página inicial com botão de login via Google
+├── login.php               # Realiza autenticação OAuth2 com o Google
+├── logout.php              # Finaliza a sessão
+├── create_poll.php         # Tela de criação de enquetes com FullCalendar (requer login)
+├── poll.php                # Tela de resposta à enquete por convidados ou usuários logados
+├── callback.php            # Endpoint de retorno do Google OAuth
+├── vendor/                 # Pacotes Composer (após instalação)
+├── images/
+│   └── meet2ic.png         # Logo da aplicação
+├── sql/
+│   └── schema.sql          # Script para criação do banco de dados MySQL
+└── README.md               # Esta documentação
 ```
 
-## Integrate with your tools
+---
 
-- [ ] [Set up project integrations](https://gitlab.ic.unicamp.br/william/meet2ic/-/settings/integrations)
+## 🧰 Tecnologias Utilizadas
 
-## Collaborate with your team
+* **PHP 7+**
+* **MySQL 5.7+**
+* **Bootstrap 5.3**
+* **jQuery 3.6**
+* **FullCalendar 6.1.10 (modo global via CDN)**
+* **Google OAuth 2.0**
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+---
 
-## Test and Deploy
+## 🔐 Autenticação com Google
 
-Use the built-in continuous integration in GitLab.
+1. Crie um projeto no [Google Cloud Console](https://console.cloud.google.com/)
+2. Ative o OAuth2 e configure:
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+   * URI de redirecionamento: `https://SEU_DOMINIO/callback.php`
+3. Coloque as credenciais no `config.php`:
 
-***
+```php
+$client_id = 'SEU_CLIENT_ID';
+$client_secret = 'SEU_CLIENT_SECRET';
+$redirect_uri = 'https://SEU_DOMINIO/callback.php';
+```
 
-# Editing this README
+---
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## 🗃️ Banco de Dados (MySQL)
 
-## Suggestions for a good README
+Crie o banco com o seguinte esquema:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```sql
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  google_id VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL
+);
 
-## Name
-Choose a self-explaining name for your project.
+CREATE TABLE polls (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  token VARCHAR(64) NOT NULL UNIQUE,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+CREATE TABLE poll_slots (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  poll_id INT NOT NULL,
+  start_time DATETIME NOT NULL,
+  end_time DATETIME NOT NULL,
+  FOREIGN KEY (poll_id) REFERENCES polls(id)
+);
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+CREATE TABLE poll_responses (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  poll_id INT NOT NULL,
+  user_id INT DEFAULT NULL,
+  responder_name VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES polls(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+CREATE TABLE poll_response_slots (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  response_id INT NOT NULL,
+  slot_id INT NOT NULL,
+  FOREIGN KEY (response_id) REFERENCES poll_responses(id),
+  FOREIGN KEY (slot_id) REFERENCES poll_slots(id)
+);
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+---
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 🚀 Funcionalidades
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+* Login com Google (OAuth2)
+* Criação de enquetes com seleção visual de horários (via FullCalendar)
+* Compartilhamento por URL única
+* Participantes podem responder com ou sem login
+* Visualização de quem está disponível em cada horário
+* Possibilidade de remover horários durante a criação
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+---
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 🧪 Requisitos
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+* PHP 7.4+
+* MySQL/MariaDB
+* Servidor Apache/Nginx com rewrite ativo
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Para containers, o PHP\:Apache já pode ser utilizado com volume montado e permissões ajustadas.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---
 
-## License
-For open source projects, say how it is licensed.
+## 🧭 Roadmap Futuro
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+* Exportar para Google Agenda ou .ics
+* Definir horário ideal com base na sobreposição
+* Notificações por e-mail
+* Dashboard com histórico de enquetes
+
+---
+
+## 📝 Licença
+
+Este projeto é de uso interno da UNICAMP (Instituto de Computação) e segue diretrizes de software livre acadêmico, podendo ser adaptado por outras unidades mediante autorização.
+

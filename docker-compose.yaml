@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:10.5
+    container_name: mariadb_admsis
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: r00t@P4ssw0rd
+      MYSQL_DATABASE: ddic
+      MYSQL_USER: uddic
+      MYSQL_PASSWORD: S3nh4@25u
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./db_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d:ro
+
+
+  php-apache:
+    build: .
+    container_name: php_apache_ddic
+    restart: always
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - mariadb
+
