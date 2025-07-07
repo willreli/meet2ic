@@ -135,5 +135,4 @@ Para containers, o PHP\:Apache já pode ser utilizado com volume montado e permi
 
 ## 📝 Licença
 
-Este projeto é de uso interno da UNICAMP (Instituto de Computação) e segue diretrizes de software livre acadêmico, podendo ser adaptado por outras unidades mediante autorização.
-
+Este projeto está sendo utilizado internamente na UNICAMP (Instituto de Computação) e segue diretrizes de software livre acadêmico. Ele pode ser adaptado por outras unidades ou por qualquer pessoa interessada. Caso sejam implementadas melhorias, agradecemos se forem compartilhadas conosco.
