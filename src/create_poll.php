@@ -9,6 +9,7 @@ if (!isset($_SESSION['access_token'])) {
 }
 
 $user_name = $_SESSION['user_name'] ?? '';
+$user_email = $_SESSION['user_email'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = $_POST['title'];
@@ -53,14 +54,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="d-flex justify-content-between align-items-center">
     <div>
       <h2>Criar Enquete de Disponibilidade</h2>
-      <p class="text-muted">Logado como <strong><?= htmlspecialchars($user_name) ?></strong></p>
+      <p class="text-muted">Logado como <strong><?= htmlspecialchars($user_name) ?> (<?= htmlspecialchars($user_email) ?>)</strong></p>
     </div>
     <a href="logout.php" class="btn btn-outline-danger">Sair</a>
   </div>
 
   <form method="POST" onsubmit="return prepareSubmission();">
     <div class="mb-3">
-      <label class="form-label">Título da Enquete:</label>
+      <label class="form-label"><b>Título da Enquete:</b></label>
       <input type="text" name="title" class="form-control" required>
 <hr>
       <p class="text-muted">Clique (segure) e arraste para selecionar os horários desejado. Clique em um horário 'Alocado' para removê-lo.</p>
