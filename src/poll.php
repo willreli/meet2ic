@@ -81,7 +81,7 @@ $user_email = $_SESSION['user_email'] ?? '';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body class="container mt-5">
-    <h2>Enquete: <?= htmlspecialchars($poll['title']) ?></h2>
+    <h2 style="color: blue">Enquete: <?= htmlspecialchars($poll['title']) ?></h2>
 
     <?php if ($just_created): ?>
         <div class="alert alert-success">

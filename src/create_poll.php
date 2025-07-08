@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <style>
     #calendar {
       max-width: 1000px;
+      max-height: 500px;
       margin: 40px auto;
     }
   </style>
