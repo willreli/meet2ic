@@ -60,11 +60,13 @@ $stmt_names = $pdo->prepare("SELECT DISTINCT user_name, user_email FROM response
 $stmt_names->execute([$poll['id']]);
 $user_names = $stmt_names->fetchAll();
 
-$stmt_details = $pdo->prepare("SELECT user_name, slot_id FROM responses WHERE poll_id = ? AND available = 1");
+$stmt_details = $pdo->prepare("SELECT user_name, user_email, slot_id FROM responses WHERE poll_id = ? AND available = 1");
 $stmt_details->execute([$poll['id']]);
 $responses_by_user = [];
+$responses_by_user_email = [];
 foreach ($stmt_details as $row) {
     $responses_by_user[$row['user_name']][] = $row['slot_id'];
+    $responses_by_user_email[$row['user_name']]['email'] = $row['user_email'];
 }
 
 $user_name = $_SESSION['user_name'] ?? '';
@@ -174,7 +176,8 @@ $user_email = $_SESSION['user_email'] ?? '';
     <h5 class="mt-4">Quem já respondeu ?</h5>
     <ul>
         <?php foreach ($responses_by_user as $name => $slot_ids): ?>
-            <li><strong><?= htmlspecialchars($name) ?></strong>
+            <li><strong><?= htmlspecialchars($name) ?></strong> - (<?= htmlspecialchars($responses_by_user_email["$name"]['email']) ?>)
+
             </li>
         <?php endforeach; ?>
         <?php if (empty($responses_by_user)): ?>
