@@ -29,11 +29,31 @@ foreach ($slots as $s) {
     $slot_map[$s['id']] = $s;
 }
 
-$stmt_summary = $pdo->prepare("SELECT slot_id, COUNT(*) as total FROM responses WHERE poll_id = ? AND available = 1 GROUP BY slot_id");
+$stmt_summary = $pdo->prepare("
+    SELECT slot_id, user_name, available
+    FROM responses
+    WHERE poll_id = ?
+");
 $stmt_summary->execute([$poll['id']]);
+
 $resumo = [];
 foreach ($stmt_summary as $row) {
-    $resumo[$row['slot_id']] = $row['total'];
+    $slot_id = $row['slot_id'];
+    $status = (int)$row['available'];
+    $name = $row['user_name'];
+
+    if (!isset($resumo[$slot_id])) {
+        $resumo[$slot_id] = [
+            'disponiveis' => [],
+            'talvez' => []
+        ];
+    }
+
+    if ($status === 1) {
+        $resumo[$slot_id]['disponiveis'][] = $name;
+    } elseif ($status === 0) {
+        $resumo[$slot_id]['talvez'][] = $name;
+    }
 }
 
 $stmt_names = $pdo->prepare("SELECT DISTINCT user_name, user_email FROM responses WHERE poll_id = ? ORDER BY user_name ASC");
@@ -71,18 +91,101 @@ $user_email = $_SESSION['user_email'] ?? '';
 
     <?php if (!$user_name): ?>
         <div class="alert alert-warning">
-            <p>Você ainda não está logado. <a href="login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="btn btn-sm btn-outline-primary">Entrar com Google</a></p>
+            <p>Você ainda não está logado (entre com sua conta para facilitar o preenchimento). <a href="login.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="btn btn-sm btn-outline-primary">Entrar com Google</a></p>
         </div>
     <?php endif; ?>
 
-    <h4 class="mt-4">Resumo das Respostas:</h4>
+    <hr>
+    <form action="submit_availability.php?token=<?= $token ?>" method="POST">
+        <input type="hidden" name="poll_id" value="<?= $poll['id'] ?>">
+
+        <?php if (!$user_name): ?>
+        <div class="mb-3">
+            <h4>Marque sua disponibilidade e suas informações.</h4>
+            <input type="text" name="user_name" class="form-control" placeholder="Entre com seu nome" required> <br>
+            <!-- <label for="user_email" class="form-label">Seu e-mail:</label> -->
+            <input type="email" name="user_email" class="form-control" placeholder="Entre com seu e-mail" required>
+        </div>
+        <?php else: ?>
+            <h3>Marque sua disponibilidade.</h3>
+            <input type="hidden" name="user_name" value="<?= htmlspecialchars($user_name) ?>">
+            <input type="hidden" name="user_email" value="<?= htmlspecialchars($user_email) ?>">
+            <p><strong>Você está respondendo como:</strong> <?= htmlspecialchars($user_name) ?> (<?= htmlspecialchars($user_email) ?>)</p>
+        <?php endif; ?>
+
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Horário</th>
+                    <th>Disponível ?</th>
+                    <th>Talvez ?</th>
+                    <th>Indisponível ?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($slots as $slot): ?>
+                <tr>
+                    <td><?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?></td>
+                    <td><input type="radio" name="slots[<?= $slot['id'] ?>]" value="1"></td>
+                    <td><input type="radio" name="slots[<?= $slot['id'] ?>]" value="0"></td>
+                    <td><input type="radio" name="slots[<?= $slot['id'] ?>]" value="-1" checked></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-success">Salvar Disponibilidade</button>
+        <?php if ($user_name): ?>
+            <a href="delete_response.php?poll_id=<?= $poll['id'] ?>&email=<?= urlencode($user_email) ?>" class="btn btn-danger ms-2">Apagar Respostas</a>
+        <?php endif; ?>
+    </form>
+
+<hr>
+
+<table style="border-collapse: separate; border-spacing: 10px;">
+
+<tr>
+<td>
+<h4 class="mt-4">Resumo das Respostas:</h4>
+<table style="border-collapse: separate; border-spacing: 10px;">
+  <?php foreach ($slots as $slot): ?>
+    <?php
+      $r = $resumo[$slot['id']] ?? ['disponiveis' => [], 'talvez' => []];
+      if (count($r['disponiveis']) === 0 && count($r['talvez']) === 0) continue;
+
+      $text_disponiveis = '<b>'. count($r['disponiveis']) . ' disponível(is)</b>';
+      if ($r['disponiveis']) {
+          $text_disponiveis .= ' (' . implode(' / ', $r['disponiveis']) . ')';
+      }
+
+      $text_talvez = count($r['talvez']) . ' talvez';
+      if ($r['talvez']) {
+          $text_talvez .= ' (' . implode(' / ', $r['talvez']) . ')';
+      }
+    ?>
+    <tr>
+      <td> <?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?> </td>
+      <td> <?= $text_disponiveis ?> <br> <?= $text_talvez ?> </td>
+    </tr>
+  <?php endforeach; ?>
+    </table>
+    </td>
+    <td>
+    <h5 class="mt-4">Quem já respondeu ?</h5>
     <ul>
-        <?php foreach ($slots as $slot): ?>
-            <li>
-                <?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?> — <?= $resumo[$slot['id']] ?? 0 ?> disponível(is)
+        <?php foreach ($responses_by_user as $name => $slot_ids): ?>
+            <li><strong><?= htmlspecialchars($name) ?></strong>
             </li>
         <?php endforeach; ?>
+        <?php if (empty($responses_by_user)): ?>
+            <li>Ninguém respondeu ainda.</li>
+        <?php endif; ?>
     </ul>
+        </td>
+        </tr>
+        </table>
+
+<hr>
 
     <h5 class="mt-4">Disponibilidade dos Participantes:</h5>
     <ul>
@@ -100,46 +203,6 @@ $user_email = $_SESSION['user_email'] ?? '';
             <li>Ninguém respondeu ainda.</li>
         <?php endif; ?>
     </ul>
-
-    <hr>
-    <form action="submit_availability.php?token=<?= $token ?>" method="POST">
-        <input type="hidden" name="poll_id" value="<?= $poll['id'] ?>">
-
-        <?php if (!$user_name): ?>
-        <div class="mb-3">
-            <label for="user_name" class="form-label">Seu nome:</label>
-            <input type="text" name="user_name" class="form-control" required>
-        </div>
-        <?php else: ?>
-            <input type="hidden" name="user_name" value="<?= htmlspecialchars($user_name) ?>">
-            <input type="hidden" name="user_email" value="<?= htmlspecialchars($user_email) ?>">
-            <p><strong>Você está respondendo como:</strong> <?= htmlspecialchars($user_name) ?></p>
-        <?php endif; ?>
-
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Horário</th>
-                    <th>Disponível?</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($slots as $slot): ?>
-                <tr>
-                    <td><?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?></td>
-                    <td>
-                        <input type="checkbox" name="slots[<?= $slot['id'] ?>]" value="1">
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-
-        <button type="submit" class="btn btn-success">Salvar Disponibilidade</button>
-        <?php if ($user_name): ?>
-            <a href="delete_response.php?poll_id=<?= $poll['id'] ?>&email=<?= urlencode($user_email) ?>" class="btn btn-danger ms-2">Apagar Respostas</a>
-        <?php endif; ?>
-    </form>
 
 </body>
 </html>
