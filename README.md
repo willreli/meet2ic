@@ -17,11 +17,12 @@ A solução para criar e responder enquetes de disponibilidade com facilidade us
 ├── create_poll.php         # Tela de criação de enquetes com FullCalendar (requer login)
 ├── poll.php                # Tela de resposta à enquete por convidados ou usuários logados
 ├── callback.php            # Endpoint de retorno do Google OAuth
+├── submit_availability.php # Controle para persistência de resposta na enquete e envio de notificação
 ├── vendor/                 # Pacotes Composer (após instalação)
 ├── images/
 │   └── meet2ic.png         # Logo da aplicação
 ├── sql/
-│   └── schema.sql          # Script para criação do banco de dados MySQL
+│   └── init.sql          # Script para criação do banco de dados MySQL
 └── README.md               # Esta documentação
 ```
 
