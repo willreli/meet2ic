@@ -12,6 +12,9 @@
 
 session_start();
 
+$fqdn = 'localhost';
+$maildomain = 'localhost';
+
 $clientID = 'xxxxxxxxxxxx-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
 $clientSecret = 'XXXXXX-XXXXXXXXXXXXXXXXXXXXXXX_XXX-';
 $redirectUri = 'http://localhost:8080/callback.php';
