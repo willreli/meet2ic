@@ -111,6 +111,7 @@ CREATE TABLE poll_response_slots (
 * Participantes podem responder com ou sem login
 * Visualização de quem está disponível em cada horário
 * Possibilidade de remover horários durante a criação
+* Notificações por e-mail (utilizando MTA local)
 
 ---
 
@@ -128,7 +129,6 @@ Para containers, o PHP\:Apache já pode ser utilizado com volume montado e permi
 
 * Exportar para Google Agenda ou .ics
 * Definir horário ideal com base na sobreposição
-* Notificações por e-mail
 * Dashboard com histórico de enquetes
 
 ---
