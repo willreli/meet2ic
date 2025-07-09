@@ -53,8 +53,8 @@ if ($creator && filter_var($creator['email'], FILTER_VALIDATE_EMAIL)) {
   $subject = "[Meet2IC] $responder_name respondeu à sua enquete";
   $message = "Olá {$creator['name']},\n\n" .
              "$responder_name acabou de responder à sua enquete \"{$creator['title']}\".\n\n" .
-             "Acesse: https://m2i.ic.unicamp.br/poll.php?token={$creator['token']}\n\n--\nMeet2IC";
-  $headers = "From: noreply@ic.unicamp.br";
+             "Acesse: https://$fqdn/poll.php?token={$creator['token']}\n\n--\nMeet2IC";
+  $headers = "From: noreply@$maildomain";
 
   mail($to, $subject, $message, $headers);
 }
