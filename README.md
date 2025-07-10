@@ -22,7 +22,7 @@ A solução para criar e responder enquetes de disponibilidade com facilidade us
 ├── images/
 │   └── meet2ic.png         # Logo da aplicação
 ├── sql/
-│   └── init.sql          # Script para criação do banco de dados MySQL
+│   └── init.sql            # Script para criação do banco de dados MySQL
 └── README.md               # Esta documentação
 ```
 
@@ -113,6 +113,7 @@ CREATE TABLE poll_response_slots (
 * Visualização de quem está disponível em cada horário
 * Possibilidade de remover horários durante a criação
 * Notificações por e-mail (utilizando MTA local)
+* Define horário ideal com base na sobreposição
 
 ---
 
@@ -129,7 +130,6 @@ Para containers, o PHP\:Apache já pode ser utilizado com volume montado e permi
 ## 🧭 Roadmap Futuro
 
 * Exportar para Google Agenda ou .ics
-* Definir horário ideal com base na sobreposição
 * Dashboard com histórico de enquetes
 
 ---
