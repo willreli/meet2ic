@@ -25,7 +25,7 @@ $valid_slot_ids = array_column($stmt->fetchAll(), 'id');
 // Salvar respostas
 $stmt = $pdo->prepare("INSERT INTO responses (poll_id, user_name, user_email, slot_id, available) VALUES (?, ?, ?, ?, ?)");
 foreach ($slots as $slot_id => $status) {
-    if (in_array($status, ['1', '0'])) { // só grava disponível (1) ou talvez (0)
+    if (in_array($status, ['1', '0', '-1'])) { // só grava disponível (1) ou talvez (0)
         $stmt->execute([$poll_id, $user_name, $user_email, $slot_id, $status]);
     }
 }

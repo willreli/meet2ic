@@ -60,7 +60,7 @@ $stmt_names = $pdo->prepare("SELECT DISTINCT user_name, user_email FROM response
 $stmt_names->execute([$poll['id']]);
 $user_names = $stmt_names->fetchAll();
 
-$stmt_details = $pdo->prepare("SELECT user_name, user_email, slot_id FROM responses WHERE poll_id = ? AND available = 1");
+$stmt_details = $pdo->prepare("SELECT user_name, user_email, slot_id, available FROM responses WHERE poll_id = ? AND (available = 1 OR available =0 OR available = -1)");
 $stmt_details->execute([$poll['id']]);
 $responses_by_user = [];
 $responses_by_user_email = [];
@@ -69,8 +69,51 @@ foreach ($stmt_details as $row) {
     $responses_by_user_email[$row['user_name']]['email'] = $row['user_email'];
 }
 
+$stmt_details = $pdo->prepare("SELECT user_name, user_email, slot_id, available FROM responses WHERE poll_id = ? AND (available = 1 OR available =0)");
+$stmt_details->execute([$poll['id']]);
+$responses_by_user_available = [];
+foreach ($stmt_details as $row) {
+    $responses_by_user_available[$row['user_name']][] = $row['slot_id'];
+}
+
+// Verifica quem marcou tudo como indisponível
+$stmt_all_negative = $pdo->prepare("
+    SELECT user_name, COUNT(*) AS total_indisp
+    FROM responses
+    WHERE poll_id = ? AND available = -1
+    GROUP BY user_name
+");
+$stmt_all_negative->execute([$poll['id']]);
+
+$usuarios_tudo_indisponivel = [];
+foreach ($stmt_all_negative as $row) {
+    if ((int)$row['total_indisp'] === count($slots)) {
+        $usuarios_tudo_indisponivel[] = $row['user_name'];
+    }
+}
+
 $user_name = $_SESSION['user_name'] ?? '';
 $user_email = $_SESSION['user_email'] ?? '';
+
+// Passo 1: Determinar o melhor slot (maior 'disponiveis', e em caso de empate, maior 'talvez')
+$max_disponiveis = -1;
+$max_talvez = -1;
+$melhor_slot_id = null;
+
+foreach ($slots as $slot) {
+    $r = $resumo[$slot['id']] ?? ['disponiveis' => [], 'talvez' => []];
+    $qtd_disponiveis = count($r['disponiveis']);
+    $qtd_talvez = count($r['talvez']);
+
+    if (
+        $qtd_disponiveis > $max_disponiveis ||
+        ($qtd_disponiveis === $max_disponiveis && $qtd_talvez > $max_talvez)
+    ) {
+        $max_disponiveis = $qtd_disponiveis;
+        $max_talvez = $qtd_talvez;
+        $melhor_slot_id = $slot['id'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -79,6 +122,14 @@ $user_email = $_SESSION['user_email'] ?? '';
     <meta charset="UTF-8">
     <title>Responder Enquete</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+<style>
+.melhor-horario {
+  background-color: #d4edda; /* verde claro */
+  font-weight: bold;
+}
+</style>
+
 </head>
 <body class="container mt-5">
     <h2 style="color: blue">Enquete: <?= htmlspecialchars($poll['title']) ?></h2>
@@ -145,7 +196,6 @@ $user_email = $_SESSION['user_email'] ?? '';
 <hr>
 
 <table style="border-collapse: separate; border-spacing: 10px;">
-
 <tr>
 <td>
 <h4 class="mt-4">Resumo das Respostas:</h4>
@@ -164,49 +214,68 @@ $user_email = $_SESSION['user_email'] ?? '';
       if ($r['talvez']) {
           $text_talvez .= ' (' . implode(' / ', $r['talvez']) . ')';
       }
+
+      $highlight_class = ($slot['id'] === $melhor_slot_id) ? 'melhor-horario' : '';
     ?>
-    <tr>
+    <tr class="<?= $highlight_class ?>">
       <td> <?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?> </td>
       <td> <?= $text_disponiveis ?> <br> <?= $text_talvez ?> </td>
     </tr>
   <?php endforeach; ?>
-    </table>
-    </td>
-    <td>
-    <h5 class="mt-4">Quem já respondeu ?</h5>
-    <ul>
-        <?php foreach ($responses_by_user as $name => $slot_ids): ?>
-            <li><strong><?= htmlspecialchars($name) ?></strong> - (<?= htmlspecialchars($responses_by_user_email["$name"]['email']) ?>)
-
-            </li>
-        <?php endforeach; ?>
-        <?php if (empty($responses_by_user)): ?>
-            <li>Ninguém respondeu ainda.</li>
-        <?php endif; ?>
-    </ul>
-        </td>
-        </tr>
-        </table>
+</table>
+</td>
+<td>
+<h5 class="mt-4">Quem já respondeu ?</h5>
+<ul>
+<?php foreach ($responses_by_user as $name => $slot_ids): ?>
+    <?php
+        $nome_formatado = htmlspecialchars($name);
+        $email = htmlspecialchars($responses_by_user_email["$name"]['email']);
+        $classe = in_array($name, $usuarios_tudo_indisponivel) ? 'text-danger' : '';
+        $comentario = in_array($name, $usuarios_tudo_indisponivel) ? ' (indisponível para todos os horários)' : '';
+    ?>
+    <li class="<?= $classe ?>"><strong><?= $nome_formatado ?></strong> - (<?= $email ?>) <?= $comentario ?></li>
+<?php endforeach; ?>
+    <?php if (empty($responses_by_user)): ?>
+        <li>Ninguém respondeu ainda...</li>
+    <?php endif; ?>
+</ul>
+</td>
+</tr>
+</table>
 
 <hr>
 
     <h5 class="mt-4">Disponibilidade dos Participantes:</h5>
-    <ul>
-        <?php foreach ($responses_by_user as $name => $slot_ids): ?>
-            <li><strong><?= htmlspecialchars($name) ?>:</strong>
-                <ul>
-                    <?php foreach ($slot_ids as $id): ?>
-                        <?php $slot = $slot_map[$id]; ?>
-                        <li><?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </li>
-        <?php endforeach; ?>
-        <?php if (empty($responses_by_user)): ?>
-            <li>Ninguém respondeu ainda.</li>
-        <?php endif; ?>
-    </ul>
+<ul>
+<?php foreach ($responses_by_user as $name => $slot_ids): ?>
+    <?php
+        $nome_formatado = htmlspecialchars($name);
+        $email = isset($responses_by_user_email[$name]['email']) 
+            ? htmlspecialchars($responses_by_user_email[$name]['email']) 
+            : '';
+        $tudo_indisponivel = in_array($name, $usuarios_tudo_indisponivel);
+        $classe = $tudo_indisponivel ? 'text-danger' : '';
+	$comentario = $tudo_indisponivel ? ' <em>(indisponível para todos os horários)</em>' : '';
+	$slot_ids_available = $responses_by_user_available[$name] ?? [];
+    ?>
+    <li class="<?= $classe ?>">
+        <strong><?= $nome_formatado ?></strong>
+        <?php if ($email): ?> – (<?= $email ?>)<?php endif; ?>
+	<?= $comentario ?>
+	          <ul>
+                     <?php foreach ($slot_ids_available as $id): ?>
+                         <?php $slot = $slot_map[$id]; ?>
+                         <li><?= date('d/m/Y H:i', strtotime($slot['start_time'])) ?> às <?= date('H:i', strtotime($slot['end_time'])) ?></li>
+                     <?php endforeach; ?>
+                 </ul>
+    </li>
+<?php endforeach; ?>
 
+<?php if (empty($responses_by_user)): ?>
+    <li>Ninguém respondeu ainda.</li>
+<?php endif; ?>
+</ul>
 </body>
 </html>
 
