@@ -106,13 +106,14 @@ CREATE TABLE responses (
 ## 🚀 Funcionalidades
 
 * Login com Google (OAuth2)
-* Criação de enquetes com seleção visual de horários (via FullCalendar)
+* Criação de enquetes com seleção visual de horários (via FullCalendar) e descrição com (via CKEditor)
 * Compartilhamento por URL única
 * Participantes podem responder com ou sem login
 * Visualização de quem está disponível em cada horário
 * Possibilidade de remover horários durante a criação
 * Notificações por e-mail (utilizando MTA local)
 * Define horário ideal com base na sobreposição
+* Dashboard com histórico de enquetes
 
 ---
 
@@ -129,7 +130,6 @@ Para containers, o PHP\:Apache já pode ser utilizado com volume montado e permi
 ## 🧭 Roadmap Futuro
 
 * Exportar para Google Agenda ou .ics
-* Dashboard com histórico de enquetes
 
 ---
 
