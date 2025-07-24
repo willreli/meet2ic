@@ -132,7 +132,24 @@ foreach ($slots as $slot) {
 
 </head>
 <body class="container mt-5">
+
+<nav class="mb-4 d-flex justify-content-end">
+  <a class="btn btn-primary me-2" href="./create_poll.php">Crie sua enquete</a>
+  <?php if ($user_name): ?>
+  <a href="dashboard.php" class="btn btn-success me-2">Minhas enquetes</a>
+  <a class="btn btn-outline-danger" href="./logout.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']) ?>">Sair</a>
+  <?php endif; ?>
+</nav>
+
     <h2 style="color: blue">Enquete: <?= htmlspecialchars($poll['title']) ?></h2>
+
+    <?php if (!empty($poll['description'])): ?>
+    <div class="alert alert-info">
+	<label>Descrição da enquete:</label>
+        <?= $poll['description'] ?>
+    </div>
+    <?php endif; ?>
+
 
     <?php if ($just_created): ?>
         <div class="alert alert-success">

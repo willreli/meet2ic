@@ -12,6 +12,7 @@ CREATE TABLE polls (
     user_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     token VARCHAR(64) NOT NULL UNIQUE,
+    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

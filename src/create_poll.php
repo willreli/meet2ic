@@ -13,12 +13,13 @@ $user_email = $_SESSION['user_email'] ?? '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = $_POST['title'];
+    $description = $_POST['description'] ?? '';
     $selected_blocks = json_decode($_POST['selected_blocks'], true);
 
     $token = bin2hex(random_bytes(16));
 
-    $stmt = $pdo->prepare("INSERT INTO polls (user_id, title, token) VALUES (?, ?, ?)");
-    $stmt->execute([$_SESSION['user_id'], $title, $token]);
+    $stmt = $pdo->prepare("INSERT INTO polls (user_id, title, token, description) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$_SESSION['user_id'], $title, $token, $description]);
     $poll_id = $pdo->lastInsertId();
 
     $stmt_slot = $pdo->prepare("INSERT INTO poll_slots (poll_id, start_time, end_time) VALUES (?, ?, ?)");
@@ -43,6 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+  <script src="./ckeditor/ckeditor.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('description')) {
+      CKEDITOR.replace('description');
+    }
+  });
+</script>
+
   <style>
     #calendar {
       max-width: 1000px;
@@ -57,13 +67,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <h2>Criar Enquete de Disponibilidade</h2>
       <p class="text-muted">Logado como <strong><?= htmlspecialchars($user_name) ?> (<?= htmlspecialchars($user_email) ?>)</strong></p>
     </div>
-    <a href="logout.php" class="btn btn-outline-danger">Sair</a>
+
+<nav class="mb-4 d-flex justify-content-end">
+  <a href="dashboard.php" class="btn btn-success me-2">Minhas enquetes</a>
+  <a href="logout.php" class="btn btn-outline-danger">Sair</a>
+</nav>
+
+
   </div>
 
   <form method="POST" onsubmit="return prepareSubmission();">
     <div class="mb-3">
       <label class="form-label"><b>Título da Enquete:</b></label>
       <input type="text" name="title" class="form-control" required>
+      <label for="description">Descrição da Enquete:</label>
+      <textarea name="description" id="description" class="form-control" rows="5"></textarea>
 <hr>
       <p class="text-muted">Clique (segure) e arraste para selecionar os horários desejado. Clique em um horário 'Alocado' para removê-lo.</p>
     </div>
