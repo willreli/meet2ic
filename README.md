@@ -11,6 +11,7 @@ A solução para criar e responder enquetes de disponibilidade com facilidade us
 ```
 /
 ├── config.php              # Configuração de sessão, Google OAuth e conexão PDO
+├── dashboard.php           # Página de informação de Minhas enquetes
 ├── index.php               # Página inicial com botão de login via Google
 ├── login.php               # Realiza autenticação OAuth2 com o Google
 ├── logout.php              # Finaliza a sessão
@@ -18,6 +19,7 @@ A solução para criar e responder enquetes de disponibilidade com facilidade us
 ├── poll.php                # Tela de resposta à enquete por convidados ou usuários logados
 ├── callback.php            # Endpoint de retorno do Google OAuth
 ├── submit_availability.php # Controle para persistência de resposta na enquete e envio de notificação
+├── doc/                    # Documentação sobre a utilização do ambiente
 ├── vendor/                 # Pacotes Composer (após instalação)
 ├── images/
 │   └── meet2ic.png         # Logo da aplicação
@@ -36,6 +38,7 @@ A solução para criar e responder enquetes de disponibilidade com facilidade us
 * **jQuery 3.6**
 * **FullCalendar 6.1.10 (modo global via CDN)**
 * **Google OAuth 2.0**
+* **CKEditor (utilizado para criação da descrição da enquete)**
 
 ---
 
@@ -61,44 +64,40 @@ Crie o banco com o seguinte esquema:
 
 ```sql
 CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  google_id VARCHAR(255) UNIQUE NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE polls (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  token VARCHAR(64) NOT NULL UNIQUE,
-  FOREIGN KEY (user_id) REFERENCES users(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE poll_slots (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  poll_id INT NOT NULL,
-  start_time DATETIME NOT NULL,
-  end_time DATETIME NOT NULL,
-  FOREIGN KEY (poll_id) REFERENCES polls(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    poll_id INT NOT NULL,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    FOREIGN KEY (poll_id) REFERENCES polls(id)
 );
 
-CREATE TABLE poll_responses (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  poll_id INT NOT NULL,
-  user_id INT DEFAULT NULL,
-  responder_name VARCHAR(255),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (poll_id) REFERENCES polls(id),
-  FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
-CREATE TABLE poll_response_slots (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  response_id INT NOT NULL,
-  slot_id INT NOT NULL,
-  FOREIGN KEY (response_id) REFERENCES poll_responses(id),
-  FOREIGN KEY (slot_id) REFERENCES poll_slots(id)
+CREATE TABLE responses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    poll_id INT NOT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    user_email VARCHAR(100),
+    slot_id INT NOT NULL,
+    available BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (poll_id) REFERENCES polls(id),
+    FOREIGN KEY (slot_id) REFERENCES poll_slots(id)
 );
 ```
 
